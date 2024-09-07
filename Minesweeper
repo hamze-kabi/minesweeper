@@ -1,0 +1,280 @@
+# Minesweeper
+
+import random
+import time
+
+row_count = 8
+column_count = 8
+mine_count = 10
+
+square_dict = [[{} for x in range(column_count)] for y in range(row_count)]
+
+for x in range(row_count):
+    for y in range(column_count):
+        square_dict[x][y]['content'] = ' '
+        square_dict[x][y]['centered'] = False
+        square_dict[x][y]['checked'] = False
+        square_dict[x][y]['empty'] = False
+        square_dict[x][y]['mine'] = False
+        square_dict[x][y]['flag'] = False
+        square_dict[x][y]['adjacent'] = False
+        square_dict[x][y]['print'] = False
+
+def time_function():
+    Timer = False
+    Stopwatch = False
+    Secs_countdown = None
+    timer_type = input('Which type:\n1) Timer\n2) Stopwatch\n')
+    if timer_type == '1':
+        minutes_count = int(input('How many minutes to count down?\n'))
+        Secs_countdown = 60 * minutes_count
+        Timer = True
+    elif timer_type == '2':
+        Stopwatch = True
+    return Timer, Stopwatch, Secs_countdown
+
+# import time
+# inp = int(input('how many secs?\n'))
+# start = time.time()
+# input('ssss')
+# print(round(inp - (time.time() - start), 1))
+
+def print_board(time_started=True, timesup=False):  # function that prints the board
+    if time_started:
+        if timer:
+            remained_time = round(secs_countdown - (time.time() - start_time))
+            if remained_time <= 0:
+                print('Remained Time: 0.0 second(s)')
+            else:
+                print(f'Remained Time: {remained_time} second(s)')
+        elif stopwatch:
+            print('Elapsed time: ', round(time.time() - start_time, 1))
+    else:
+        pass
+    print('  ', end='')
+    for x in range(column_count):
+        if x == range(column_count)[-1]:
+            print(f'   {x}')
+        else:
+            print(f'   {x}', end='')
+    print('-' * 36)
+    for x in range(row_count):
+        print(x, ' ', end='')
+        for y in range(column_count):
+            if square_dict[x][y]['print']:
+                if y == range(column_count)[-1]:
+                    print('|', square_dict[x][y]['content'], '|', end='\n')
+                else:
+                    print('|', square_dict[x][y]['content'], '', end='')
+            else:
+                if y == range(column_count)[-1]:
+                    print('|', ' ', '|', end='\n')
+                else:
+                    print('|', ' ', '', end='')
+    print('-' * 36)
+    return timesup
+
+
+def get_input():
+    user_input_row, user_input_column = [int(x) for x in input('Enter row and column: ').split()]
+    return user_input_row, user_input_column
+
+
+def random_mine_adjacent_empty(target_row, target_column):
+    random_mine_pos = random.sample(range(row_count * column_count), mine_count)
+    while True:
+        no_repetitive = False
+        no_mine_in_list = False
+        target_unequal_to_adjacent = False
+        if len(random_mine_pos) == len(set(random_mine_pos)):
+            no_repetitive = True
+        if ((target_row * row_count) + target_column) not in random_mine_pos:
+            no_mine_in_list = True
+        target_num = (target_row * row_count) + target_column
+        c = 0
+        for i in random_mine_pos:
+            if (i - row_count) - 1 == target_num or (i - row_count) == target_num or (i - row_count) + 1 == target_num \
+                    or i - 1 == target_num or i + 1 == target_num or (i + row_count) - 1 == target_num or \
+                    i + row_count == target_num or (i + row_count) + 1 == target_num:
+                c -= 1
+        if c == 0:
+            target_unequal_to_adjacent = True
+        else:
+            target_unequal_to_adjacent = False
+        if no_repetitive is True and no_mine_in_list is True and target_unequal_to_adjacent is True:
+            break
+        else:
+            random_mine_pos = random.sample(range(row_count * column_count), mine_count)
+    for x in random_mine_pos:
+        square_dict[x // row_count][x % column_count]['content'] = 'M'
+        square_dict[x // row_count][x % column_count]['mine'] = True
+        square_dict[x // row_count][x % column_count]['print'] = True
+
+    adjacents_count = []
+    for Row in range(row_count):
+        for Column in range(column_count):
+            if square_dict[Row][Column]['mine']:
+                if Row + 1 != row_count:
+                    if not square_dict[Row + 1][Column]['mine']:
+                        adjacents_count.append((Row + 1, Column))
+                        square_dict[Row + 1][Column]['adjacent'] = True
+                if Row - 1 != -1:
+                    if not square_dict[Row - 1][Column]['mine']:
+                        adjacents_count.append((Row - 1, Column))
+                        square_dict[Row - 1][Column]['adjacent'] = True
+                if Column + 1 != column_count:
+                    if not square_dict[Row][Column + 1]['mine']:
+                        adjacents_count.append((Row, Column + 1))
+                        square_dict[Row][Column + 1]['adjacent'] = True
+                if Column - 1 != -1:
+                    if not square_dict[Row][Column - 1]['mine']:
+                        adjacents_count.append((Row, Column - 1))
+                        square_dict[Row][Column - 1]['adjacent'] = True
+                if Row - 1 != -1 and Column - 1 != -1:
+                    if not square_dict[Row - 1][Column - 1]['mine']:
+                        adjacents_count.append((Row - 1, Column - 1))
+                        square_dict[Row - 1][Column - 1]['adjacent'] = True
+                if Row - 1 != -1 and Column + 1 != column_count:
+                    if not square_dict[Row - 1][Column + 1]['mine']:
+                        adjacents_count.append((Row - 1, Column + 1))
+                        square_dict[Row - 1][Column + 1]['adjacent'] = True
+                if Row + 1 != row_count and Column - 1 != -1:
+                    if not square_dict[Row + 1][Column - 1]['mine']:
+                        adjacents_count.append((Row + 1, Column - 1))
+                        square_dict[Row + 1][Column - 1]['adjacent'] = True
+                if Row + 1 != row_count and Column + 1 != column_count:
+                    if not square_dict[Row + 1][Column + 1]['mine']:
+                        adjacents_count.append((Row + 1, Column + 1))
+                        square_dict[Row + 1][Column + 1]['adjacent'] = True
+
+    for pos in adjacents_count:
+        square_dict[pos[0]][pos[1]]['content'] = str(adjacents_count.count(pos))
+
+    for x in range(row_count):
+        for y in range(column_count):
+            if square_dict[x][y]['mine'] is not True and square_dict[x][y]['adjacent'] is not True:
+                square_dict[x][y]['empty'] = True
+                square_dict[x][y]['content'] = '0'
+
+
+def expansion(target_row, target_column):
+    centered = set()
+    checked = set()
+
+    if square_dict[target_row][target_column]['mine']:
+        pass
+
+    def center(i, j):
+        if square_dict[i][j]['empty']:
+            if i + 1 == len(square_dict):
+                pass
+            else:
+                if square_dict[i + 1][j]['empty']:
+                    square_dict[i + 1][j]['checked'] = True
+                checked.add((i + 1, j))
+                if square_dict[i + 1][j]['adjacent']:
+                    square_dict[i + 1][j]['print'] = True
+            if i - 1 == -1:
+                pass
+            else:
+                if square_dict[i - 1][j]['empty']:
+                    square_dict[i - 1][j]['checked'] = True
+                checked.add((i - 1, j))
+                if square_dict[i - 1][j]['adjacent']:
+                    square_dict[i - 1][j]['print'] = True
+
+            if j + 1 == len(square_dict):
+                pass
+            else:
+                if square_dict[i][j + 1]['empty']:
+                    square_dict[i][j + 1]['checked'] = True
+                checked.add((i, j + 1))
+                if square_dict[i][j + 1]['adjacent']:
+                    square_dict[i][j + 1]['print'] = True
+
+            if j - 1 == -1:
+                pass
+            else:
+                if square_dict[i][j - 1]['empty']:
+                    square_dict[i][j - 1]['checked'] = True
+                checked.add((i, j - 1))
+                if square_dict[i][j - 1]['adjacent']:
+                    square_dict[i][j - 1]['print'] = True
+        for spot in checked.difference(centered):
+            centered.add(spot)
+            check(spot[0], spot[1])
+
+    def check(m, n):
+        if square_dict[m][n]['centered'] is False and square_dict[m][n]['adjacent'] is False:
+            if square_dict[m][n]['empty']:
+                square_dict[m][n]['centered'] = True
+                square_dict[m][n]['print'] = True
+            elif square_dict[m][n]['mine']:
+                pass
+            center(m, n)
+
+    centered.add((target_row, target_column))
+    checked.add((target_row, target_column))
+    center(target_row, target_column)
+
+
+def engine(user_input_row, user_input_column):
+    selected_printed = False
+    dug_mine = False
+    times_up = False
+    correct_choice = False
+    if square_dict[user_input_row][user_input_column]['mine']:
+        dug_mine = True
+        print('Dug a mine, You lose')
+
+    elif square_dict[user_input_row][user_input_column]['print']:
+        selected_printed = True
+    elif square_dict[user_input_row][user_input_column]['mine'] == False and \
+            square_dict[user_input_row][user_input_column]['print'] == False:
+        correct_choice = True
+    if timer:
+        if secs_countdown - (time.time() - start_time) <= 0:
+            times_up = True
+    return dug_mine, times_up, selected_printed, correct_choice
+
+# Running the main code
+print('Welcome to minesweeper game')
+timer, stopwatch, secs_countdown = time_function()
+print_board(time_started=False)
+tar_row, tar_column = get_input()
+square_dict[tar_row][tar_column]['content'] = '0'
+square_dict[tar_row][tar_column]['print'] = True
+random_mine_adjacent_empty(tar_row, tar_column)
+expansion(tar_row, tar_column)
+start_time = time.time()
+times_up = print_board()
+while True:
+    tar_row, tar_column = get_input()
+    dugMine, timesUp, selectPrinted, correctChoice = engine(tar_row, tar_column)
+    if dugMine:
+        for x in range(row_count):
+            for y in range(column_count):
+                if square_dict[x][y]['mine']:
+                    square_dict[x][y]['print'] = True
+        print_board()
+        print('Dug a mine, You Lose!')
+        break
+    elif timesUp:
+        print_board()
+        print('Time\'s up, You lose')
+        break
+    elif selectPrinted:
+        print('Square already selected, select a new one:\n')
+    elif correctChoice:
+        expansion(tar_row, tar_column)
+        square_dict[tar_row][tar_column]['print'] = True
+        times_up = print_board()
+    c_win = 0
+    for r in range(row_count):
+        for col in range(column_count):
+            if not square_dict[r][col]['mine'] and not square_dict[r][col]['print']:
+                c_win += 1
+    if c_win == 0:
+        times_up = print_board()
+        print('You Won!')
+        break
